@@ -2,12 +2,20 @@
 
 ## Django
 
+### Setup
+
 - Set up a virtual environment
 - See all available Django commands: `django-admin`
 - Generate the django project: `django-admin startproject <project_name>`
+    - somewhat arbitrary
+    - django_project/projects/settings.py is the main file we'll want to pay attention to
 - Run the Django Admin Server: `python manage.py runserver`
 - Make an app using Django commands: `python manage.py startapp projects`
-- Register the app in your main Django project by modifying INSTALLED_APPS = []
+    -  A single project can have multiple apps that contain different concerns for a project.
+    - e.g., dashboard, data upload, data export, etc...
+- Register the app in your main Django project by 
+    - settings.py, modifying INSTALLED_APPS = []
+
 
 
 ### Future:
