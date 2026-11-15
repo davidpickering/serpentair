@@ -1,0 +1,8 @@
+# Guardrail: block commits that contain secrets (public repo; credentials live in the git-ignored .env).
+# Install once per clone:  uvx pre-commit install
+# Scan everything:         uvx pre-commit run --all-files
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks
