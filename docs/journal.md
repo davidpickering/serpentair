@@ -113,3 +113,6 @@ Created work pool 'serpentair-managed'!
 └── Status: Ready
 └── URL: https://app.prefect.cloud/account/d4e05ffe-0cc3-43eb-bfa6-4913500ddcff/workspace/8fc2a4a6-d624-46db-a39e-58cb51e6762e/work-pools/work-pool/serpentair-managed
 ```
+
+15. Next steps
+> Next is #4 (Snowflake prod with cost safeguards, plus the Terraform bootstrap). This conversation is long, and #4 has everything it needs written down. So the flow says /clear now, then /mattpocock-skills:implement with #4. If you want to look back at this session first, run /retro before you clear, because it reviews the current conversation.
