@@ -59,7 +59,57 @@ response:
     ![alt text](image.png)
     - Give it a name (for example serpentair) and a short description. If you're asked for a flow type, pick the client credentials (machine-to-machine) option. The Lambda signs in as itself, not as you in a browser.
     - Copy the Client ID and Client Secret somewhere safe right away, such as a password manager. Don't put them in the repo or the journal. Later they'll go into .env, then AWS Secrets Manager.
-11. Used Matt Pocock /wizard skill to capture ClientID and ClientSecret. 
+11. Used Matt Pocock `/wizard` skill to capture ClientID and ClientSecret. 
 - The Wizard skill generates a .sh file
 - You run the .sh file
 - It then walks you through visiting the right webpage, copy/pasting values, and then runs a test API call to validate you can authenticate - very nice
+12. Manually set up dbt Account
+- Ran wizard skill to get information into .env
+13. Emporia Account
+- Had an existing Emporia account
+- Converted from social sign in to email/password
+- Ran wizard skill to get information into .env and test access
+```
+  Installing PyEmVue in a throwaway environment (first run takes a moment)...
+  ✓ logged in with email + password
+  devices: 7
+    - catpad gid=392825 model=SSO001 channels=1
+    - Garage/Wreath gid=397064 model=SSO001 channels=1
+    - Main Panel (200A) 11515 gid=625979 model=VUE003 channels=1
+    - (unnamed) gid=625979 model=WAT001 channels=17
+    - Dehumidifier gid=649871 model=SSO001 channels=1
+    - Garage gid=668558 model=VUE003 channels=1
+    - (unnamed) gid=668558 model=WAT001 channels=18
+  today on 'catpad' channel 1,2,3: 24 hourly points, 24 non-empty, total 0.18 kWh (first point 2026-11-14 05:00:00+00:00)
+  ✓ password login works
+  ```
+  - Main Panel and Garage are two Emporia Vue units
+  - Other devices are smart outlets that monitor/enable specific appliances.
+
+14. Prefect Account
+- Made a Prefect account, Google social login
+- $ `uvx prefect-cloud login`
+    ```
+        ✓ Logged in to Prefect Cloud
+    ```
+- $ `uvx prefect-cloud github setup`
+    ```
+    ✓ Prefect Cloud GitHub integration complete
+
+    Connected repositories:
+    - davidpickering/serpentair
+
+    Deploy a function from your repo with:
+    prefect-cloud deploy <file.py:function> --from <github repo>
+    ```
+- $ `uvx prefect work-pool create serpentair-managed --type prefect:managed`
+```
+Installed 105 packages in 3.57s
+Created work pool 'serpentair-managed'!
+
+└── UUID: 219ec96f-e425-4eea-b6e3-1cfeac12737f
+└── Type: prefect:managed
+└── Description: None
+└── Status: Ready
+└── URL: https://app.prefect.cloud/account/d4e05ffe-0cc3-43eb-bfa6-4913500ddcff/workspace/8fc2a4a6-d624-46db-a39e-58cb51e6762e/work-pools/work-pool/serpentair-managed
+```
