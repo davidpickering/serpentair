@@ -1,10 +1,10 @@
 # Home-environment data portfolio: planning brief
 
-Last updated: 2026-11-12.
+Last updated: 2026-11-15.
 
 ## Status
 
-Planning only. Split out of the dbt talk brief (`../dbt-2027/brief.md`) on 2026-11-11. No code, accounts, or infrastructure exist yet; implementation and provisioning need separate user authorization. Continue with grilling plus domain-modeling against this brief and `GLOSSARY.md`.
+Building V1 (spec #2). Split out of the dbt talk brief (`../dbt-2027/brief.md`) on 2026-11-11. Accounts set up in #3; #4 adds the Terraform bootstrap and Snowflake prod (`infra/`). Provisioning still needs user authorization.
 
 ## Goal and timing
 
@@ -33,7 +33,7 @@ Planning only. Split out of the dbt talk brief (`../dbt-2027/brief.md`) on 2026-
 - **dbt platform** owns the prod daily schedule (also the talk's Path 3) and is available as an IDE. Number of deployment environments and merge jobs on the free plan remain unverified; check at step 1.
 - **Data trigger** (fresh data landed) is owned by Prefect later. Calling the dbt platform API is blocked on the free plan, so this remains time-based in V1. The user notes data orchestrators running dbt builds is an established advanced pattern (layer-based or vertical builds), not an anti-pattern.
 - **Branch model:** feature branches → PR into `qa` → PR from `qa` into `prod`; `prod` is protected.
-- **Terraform layout:** shared modules, one root folder per deployed environment (`infra/envs/qa`, `infra/envs/prod`), separate state each. A small `infra/bootstrap` (state bucket, CI role, Snowflake CI user) is applied once by hand; everything after goes through CI.
+- **Terraform layout:** shared modules, one root folder per deployed environment (`infra/envs/qa`, `infra/envs/prod`), separate state each. A small `infra/bootstrap` (state bucket, Snowflake CI user; AWS CI role pending #9) is applied once by hand; everything after goes through CI.
 - **CI auth:** GitHub OIDC federation into an AWS role (no stored AWS keys); Snowflake key-pair in GitHub environment secrets; `prod` environment requires the user's approval. **AWS half blocked (2026-11-15):** the project's managed SCP denies creating the OIDC provider; decision deferred to #9 (see "Step 2 findings").
 - **Prefect hosting:** Prefect Cloud Hobby (free forever) with a Prefect Serverless (managed) work pool. Confirmed from the pricing page 2026-11-11: 500 min/month Prefect Serverless, up to 5 deployments, 2 users, 7-day run retention. Research claims, to verify: Hobby cannot create push pools such as ECS; managed pool runs 1 flow at a time.
 - **Emporia:** PyEmVue ([magico13/PyEmVue](https://github.com/magico13/PyEmVue), [API docs](https://github.com/magico13/PyEmVue/blob/master/api_docs.md)) for ongoing pulls (settled 2026-11-11). Unofficial, so document the risk. The emailed CSV export route was rejected.

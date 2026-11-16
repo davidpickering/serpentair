@@ -21,6 +21,12 @@ terraform {
 locals {
   env    = upper(var.environment)
   prefix = "${local.env}_"
+
+  roles = {
+    loader      = snowflake_account_role.loader.name
+    raw_reader  = snowflake_account_role.raw_reader.name
+    transformer = snowflake_account_role.transformer.name
+  }
 }
 
 # --- Database and schemas (SYSADMIN) ---------------------------------------------------------
@@ -65,12 +71,8 @@ resource "snowflake_account_role" "transformer" {
 # Snowflake best practice: roll every custom role up to SYSADMIN, so the system admin role can
 # still see and manage everything these roles create (dbt's tables, for example).
 resource "snowflake_grant_account_role" "to_sysadmin" {
-  provider = snowflake.securityadmin
-  for_each = {
-    loader      = snowflake_account_role.loader.name
-    raw_reader  = snowflake_account_role.raw_reader.name
-    transformer = snowflake_account_role.transformer.name
-  }
+  provider         = snowflake.securityadmin
+  for_each         = local.roles
   role_name        = each.value
   parent_role_name = "SYSADMIN"
 }
@@ -85,12 +87,8 @@ resource "snowflake_grant_account_role" "raw_reader_to_transformer" {
 # --- Privileges (SECURITYADMIN) --------------------------------------------------------------
 
 resource "snowflake_grant_privileges_to_account_role" "database_usage" {
-  provider = snowflake.securityadmin
-  for_each = {
-    loader      = snowflake_account_role.loader.name
-    raw_reader  = snowflake_account_role.raw_reader.name
-    transformer = snowflake_account_role.transformer.name
-  }
+  provider          = snowflake.securityadmin
+  for_each          = local.roles
   account_role_name = each.value
   privileges        = ["USAGE"]
   on_account_object {
@@ -110,7 +108,7 @@ resource "snowflake_grant_privileges_to_account_role" "transformer_create_schema
   }
 }
 
-resource "snowflake_grant_privileges_to_account_role" "warehouse_usage" {
+resource "snowflake_grant_privileges_to_account_role" "transformer_warehouse_usage" {
   provider          = snowflake.securityadmin
   account_role_name = snowflake_account_role.transformer.name
   privileges        = ["USAGE"]

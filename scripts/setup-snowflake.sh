@@ -280,7 +280,9 @@ for name in admin svc_terraform_ci; do
   fi
   openssl rsa -in "$KEY_DIR/$name.p8" -pubout -out "$KEY_DIR/$name.pub" 2>/dev/null
 done
+mkdir -p infra/bootstrap/keys
 cp "$KEY_DIR/svc_terraform_ci.pub" infra/bootstrap/keys/svc_terraform_ci.pub
+SKIPPED+=("commit infra/bootstrap/keys/svc_terraform_ci.pub (bootstrap reads it on every plan, incl. CI)")
 printf '  %s✓ copied%s the CI public key to infra/bootstrap/keys/ (public keys are safe to commit)\n' "$GREEN" "$RESET"
 write_env SNOWFLAKE_ADMIN_PRIVATE_KEY_PATH "~/.snowflake/keys/admin.p8"
 write_env SNOWFLAKE_CI_USER "SVC_TERRAFORM_CI"
@@ -314,12 +316,15 @@ stage "Bootstrap: apply on local state"
 say "infra/bootstrap creates the S3 state bucket and the Snowflake CI user (SVC_TERRAFORM_CI)."
 say "Its state can't go in the bucket yet (the bucket doesn't exist), so this first apply keeps"
 say "state locally, via a temporary, git-ignored backend_override.tf."
+# Done = bootstrap's state already lives in S3. (Not "the bucket exists": a first apply can
+# create the bucket and then fail on the Snowflake side; a re-run must resume from local state.)
 BOOTSTRAPPED=0
-if aws s3api head-bucket --bucket "$STATE_BUCKET" --profile serpentair >/dev/null 2>&1; then
+if aws s3api head-object --bucket "$STATE_BUCKET" --key bootstrap/terraform.tfstate --profile serpentair >/dev/null 2>&1; then
   BOOTSTRAPPED=1
-  printf '  %s✓ bucket %s already exists: bootstrap was applied before, skipping.%s\n' "$GREEN" "$STATE_BUCKET" "$RESET"
-  note "To change bootstrap later: infra/tf.sh bootstrap plan / apply (state is in S3)."
+  printf '  %s✓ bootstrap state is already in S3: applied before, skipping.%s\n' "$GREEN" "$RESET"
+  note "To change bootstrap later: infra/tf.sh bootstrap plan / apply."
 else
+  [[ -f infra/bootstrap/terraform.tfstate ]] && note "Found local state from an earlier attempt: resuming from it."
   printf 'terraform {\n  backend "local" {}\n}\n' > infra/bootstrap/backend_override.tf
   run "$TF" bootstrap init -input=false -reconfigure
   say "Terraform shows its plan: expect 7 AWS resources (bucket and its settings) and 4 Snowflake"
