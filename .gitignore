@@ -170,3 +170,26 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Terraform: provider caches, local state and per-machine overrides.
+# Keep .terraform.lock.hcl (it pins provider checksums, like a lockfile).
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*_override.tf
+*_override.tf.json
+*.tfplan
+.terraformrc
+terraform.rc
+
+# Private keys never live in the repo (public keys, *.pub, are fine to commit).
+*.p8
+*.pem
+*.key
+
+# dbt
+transform/target/
+transform/dbt_packages/
+transform/logs/
