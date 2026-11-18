@@ -284,8 +284,10 @@ mkdir -p infra/bootstrap/keys
 cp "$KEY_DIR/svc_terraform_ci.pub" infra/bootstrap/keys/svc_terraform_ci.pub
 SKIPPED+=("commit infra/bootstrap/keys/svc_terraform_ci.pub (bootstrap reads it on every plan, incl. CI)")
 printf '  %s✓ copied%s the CI public key to infra/bootstrap/keys/ (public keys are safe to commit)\n' "$GREEN" "$RESET"
+# shellcheck disable=SC2088  # literal ~ on purpose: .env stores it, tf.sh expands it
 write_env SNOWFLAKE_ADMIN_PRIVATE_KEY_PATH "~/.snowflake/keys/admin.p8"
 write_env SNOWFLAKE_CI_USER "SVC_TERRAFORM_CI"
+# shellcheck disable=SC2088  # literal ~ on purpose: .env stores it, tf.sh expands it
 write_env SNOWFLAKE_CI_PRIVATE_KEY_PATH "~/.snowflake/keys/svc_terraform_ci.p8"
 warn "Back up $KEY_DIR somewhere safe (e.g. a password manager). Lose a key and you rotate it."
 pause
@@ -436,6 +438,7 @@ profile_block="serpentair:
       threads: 4"
 mkdir -p "$HOME/.dbt"
 if [[ -f "$HOME/.dbt/profiles.yml" ]] && grep -q '^serpentair:' "$HOME/.dbt/profiles.yml"; then
+  # shellcheck disable=SC2088  # message text, not a path
   warn "~/.dbt/profiles.yml already has a 'serpentair' profile; leaving it alone. It should read:"
   printf '%s\n' "$profile_block" | sed 's/^/      /'
 else
