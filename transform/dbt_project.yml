@@ -1,0 +1,11 @@
+name: serpentair
+version: "1.0.0"
+profile: serpentair # local-dev: ~/.dbt/profiles.yml (template: profiles.example.yml); CI gets its own in #9
+
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+
+models:
+  serpentair:
+    +materialized: view

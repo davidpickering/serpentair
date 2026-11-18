@@ -1,0 +1,16 @@
+# Local-dev dbt profile. Copy to ~/.dbt/profiles.yml and fill in the <...> values.
+# Nothing here is secret except the private key, which stays outside the repo.
+# Database, warehouse and role come from `infra/tf.sh prod output local_dev`.
+serpentair:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: <org>-<account> # SNOWFLAKE_ORGANIZATION_NAME-SNOWFLAKE_ACCOUNT_NAME from .env
+      user: <your Snowflake user> # SNOWFLAKE_ADMIN_USER
+      private_key_path: <path to your .p8> # SNOWFLAKE_ADMIN_PRIVATE_KEY_PATH (key-pair: no MFA prompt per run)
+      role: DEVELOPER
+      warehouse: DEV_WH
+      database: SERPENTAIR_DEV
+      schema: dbt_<your name> # your personal schema, e.g. dbt_dpickering; dbt creates it
+      threads: 4

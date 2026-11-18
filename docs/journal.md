@@ -116,3 +116,35 @@ Created work pool 'serpentair-managed'!
 
 15. Next steps
 > Next is #4 (Snowflake prod with cost safeguards, plus the Terraform bootstrap). This conversation is long, and #4 has everything it needs written down. So the flow says /clear now, then /mattpocock-skills:implement with #4. If you want to look back at this session first, run /retro before you clear, because it reviews the current conversation.
+
+## 11/15/2026
+
+1. Prompt `/mattpocock-skills:implement #4`git 
+2. Manually made snowflake account
+3. Config snowflake
+- Retrieved `org name` and `account name`, `current user`
+- Generated key
+- altered user to apply RSA Key, private key allows programatic access from outside of Snowflake
+- authenticated to aws from snowflake
+
+4. Wizard Script
+- Generated terraform bootstrap
+- Generated terraform prod plan
+- Installed dbt V2.0.11
+- Established `.dbt/profiles.yml` for project serpentair - dbt_dpickering schema
+- hello world version of `dbt build`
+- Configured connection to Snowflake in dbt Platform
+
+## 11/16/20206
+1. Manual
+- commited infra/bootstrap/keys/svc_terraform_ci.pub (bootstrap reads it on every plan, incl. CI)
+- Ran `dbt debug` + `dbt build` in `transform/` - we have hello world!
+
+## 11/17/2026
+1. Worked on Pull Request description for #4. PR Review is a great place to check work and build understanding.
+2. Had not encountered committing a public key to a repo before. Spent some time understanding that practice and why it was not problematic.
+3. Examined Terraform work around the `infra/` directory. The main point of this portfolio project is to gain practical experience with Terraform. GenAI implementation - although impressive - took us from step 1 to 87 in 10 minutes. Kind of incredible, but not a great way for me to learn about it. Commented to this effect to the Claud Code with /ask-matt and came up with a plan for future tickets to just coach me through the Terraform authorship and criteria. Workflow lives at `docs/agents/terraform.md`
+4. Ran a `/retro` session and surfaced some Agent/Human collaboration refinements
+    - Getting terraform on my PATH. Done. `terraform version`
+    - Coding standards for terraform
+5. Next step: Review PR + Study Terraform code in the repo at a high level.

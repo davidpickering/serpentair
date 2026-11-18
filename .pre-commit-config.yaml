@@ -1,8 +1,46 @@
-# Guardrail: block commits that contain secrets (public repo; credentials live in the git-ignored .env).
+# Guardrails, run on every commit. CI (#9) runs the same set with `pre-commit run --all-files`.
 # Install once per clone:  uvx pre-commit install
 # Scan everything:         uvx pre-commit run --all-files
+# Mechanical rules live here; judgement calls live in CODING_STANDARDS.md (read at review).
 repos:
+  # Secrets: public repo; credentials live in the git-ignored .env.
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.30.0
     hooks:
       - id: gitleaks
+
+  # Data: source data lives in S3/Snowflake, never git (ADR 0001). dbt seeds are the exception:
+  # small, hand-made or software-derived lookup tables under transform/seeds/.
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files # 500 KB
+  - repo: local
+    hooks:
+      - id: no-data-files
+        name: block data files (ADR 0001; dbt seeds excepted)
+        language: fail
+        entry: data files belong in S3/Snowflake, not git (dbt seeds go in transform/seeds/)
+        files: '\.(csv|tsv|parquet|xlsx?|jsonl|db|sqlite)$'
+        exclude: ^transform/seeds/
+
+  # Terraform: needs terraform on PATH. fmt rewrites files in place; re-stage and commit again.
+      - id: terraform-fmt
+        name: terraform fmt
+        language: system
+        entry: terraform fmt -recursive infra
+        files: \.(tf|tfvars)$
+        pass_filenames: false
+      - id: terraform-validate
+        name: terraform validate (every root)
+        language: script
+        entry: infra/validate.sh
+        files: \.tf$
+        pass_filenames: false
+
+  # Shell. SC1087 is a false positive on the ANSI escapes ("$e[") in the wizard library.
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        args: [--severity=warning, --exclude=SC1087]

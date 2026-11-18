@@ -1,10 +1,10 @@
 # Home-environment data portfolio: planning brief
 
-Last updated: 2026-11-12.
+Last updated: 2026-11-15.
 
 ## Status
 
-Planning only. Split out of the dbt talk brief (`../dbt-2027/brief.md`) on 2026-11-11. No code, accounts, or infrastructure exist yet; implementation and provisioning need separate user authorization. Continue with grilling plus domain-modeling against this brief and `GLOSSARY.md`.
+Building V1 (spec #2). Split out of the dbt talk brief (`../dbt-2027/brief.md`) on 2026-11-11. Accounts set up in #3; #4 adds the Terraform bootstrap and Snowflake prod (`infra/`). Provisioning still needs user authorization.
 
 ## Goal and timing
 
@@ -28,13 +28,13 @@ Planning only. Split out of the dbt talk brief (`../dbt-2027/brief.md`) on 2026-
 - **Qa ingestion smoke run:** Terraform deploys qa's ingestion infra with schedules off. On merge to qa, CI runs each ingester once (invoke the Lambda, trigger each Prefect deployment) into a qa landing zone; qa's Snowpipe loads a disposable qa raw area; a check confirms rows arrived. dbt never reads qa raw data.
 - **Prod dbt schedule, V1:** time-based with a buffer after Prefect's daily pulls (the user expects builds around midnight; e.g. Prefect 00:15 local, after the previous day has completed, then dbt 01:00; exact times set during the build). Later: Prefect triggers dbt platform runs once data pulls finish.
 - **Local-dev tooling:** VS Code with the full dbt v2 distribution and the dbt extension by default (same setup as the talk's Path 2). The user may also use dbt platform's IDE for small edits.
-- **dbt platform free plan facts (confirmed from the pricing page 2026-11-12):** Developer plan has **no API access**; API access starts at Starter ($100/month/seat). Developer gets only the "Latest" release track. Run-on-job-completion chaining has been a Team/Enterprise feature.
+- **dbt platform free plan facts (confirmed from the pricing page 2026-11-12):** Developer plan has **no API access**; API access starts at Starter ($100/month/seat). Release tracks: the pricing page said "Latest" only, but inside the account (Developer, 2026-11-16) environments offer **v2 Stable** and **v2 Nightly**. Run-on-job-completion chaining has been a Team/Enterprise feature.
 - **Deploy trigger** (code/infra merged) is owned by GitHub Actions: on merge to qa/prod, `terraform apply` → qa ingestion smoke run (qa only) → **dbt v2 CLI run from GitHub Actions** against that environment. With no free API, GitHub Actions cannot trigger dbt platform jobs.
-- **dbt platform** owns the prod daily schedule (also the talk's Path 3) and is available as an IDE. Number of deployment environments and merge jobs on the free plan remain unverified; check at step 1.
+- **dbt platform** owns the prod daily schedule (also the talk's Path 3) and is available as an IDE. Confirmed on the Developer plan (2026-11-16): General, Staging and Production environment types, and merge jobs exist (see "Step 2 findings").
 - **Data trigger** (fresh data landed) is owned by Prefect later. Calling the dbt platform API is blocked on the free plan, so this remains time-based in V1. The user notes data orchestrators running dbt builds is an established advanced pattern (layer-based or vertical builds), not an anti-pattern.
 - **Branch model:** feature branches → PR into `qa` → PR from `qa` into `prod`; `prod` is protected.
-- **Terraform layout:** shared modules, one root folder per deployed environment (`infra/envs/qa`, `infra/envs/prod`), separate state each. A small `infra/bootstrap` (state bucket, CI role, Snowflake CI user) is applied once by hand; everything after goes through CI.
-- **CI auth:** GitHub OIDC federation into an AWS role (no stored AWS keys); Snowflake key-pair in GitHub environment secrets; `prod` environment requires the user's approval.
+- **Terraform layout:** shared modules, one root folder per deployed environment (`infra/envs/qa`, `infra/envs/prod`), separate state each. A small `infra/bootstrap` (state bucket, Snowflake CI user; AWS CI role pending #9) is applied once by hand; everything after goes through CI.
+- **CI auth:** GitHub OIDC federation into an AWS role (no stored AWS keys); Snowflake key-pair in GitHub environment secrets; `prod` environment requires the user's approval. **AWS half blocked (2026-11-15):** the project's managed SCP denies creating the OIDC provider; decision deferred to #9 (see "Step 2 findings").
 - **Prefect hosting:** Prefect Cloud Hobby (free forever) with a Prefect Serverless (managed) work pool. Confirmed from the pricing page 2026-11-11: 500 min/month Prefect Serverless, up to 5 deployments, 2 users, 7-day run retention. Research claims, to verify: Hobby cannot create push pools such as ECS; managed pool runs 1 flow at a time.
 - **Emporia:** PyEmVue ([magico13/PyEmVue](https://github.com/magico13/PyEmVue), [API docs](https://github.com/magico13/PyEmVue/blob/master/api_docs.md)) for ongoing pulls (settled 2026-11-11). Unofficial, so document the risk. The emailed CSV export route was rejected.
 - **Initial build is forward-looking:** get data flowing from now on. History is a later phase.
@@ -55,7 +55,7 @@ Planning only. Split out of the dbt talk brief (`../dbt-2027/brief.md`) on 2026-
 - A talk's minimum needs from here: Snowflake set up, raw Emporia/Airthings/weather data landed, and first dbt models to daily grain. Prefect, Terraform/Lambda, and Charts are not talk prerequisites.
 
 - **Two dbt runners in prod, explained in the README:** prod deploy runs come from CI because the free plan has no job API; dbt platform runs the daily schedule.
-- **dbt version in CI:** pin a specific dbt v2 version and bump it regularly (Dependabot/Renovate), accepting that dbt platform's "Latest" track may briefly run ahead; the PR compile check catches breaks.
+- **dbt version in CI:** pin a specific dbt v2 version and bump it regularly (Dependabot/Renovate), accepting that dbt platform's release track (v2 Stable) may briefly run ahead; the PR compile check catches breaks.
 - **README is the front door:** architecture diagram (sources → Lambda/Prefect → S3 landing zone → Snowpipe → gold record → dbt → qa/prod), environment and deploy flow, links to ADRs, monthly cost and safeguards, and a "differences from my workplace setup" section (no shared dev tier, free-plan workarounds). Include Open-Meteo CC BY 4.0 attribution and the PyEmVue unofficial-API caveat.
 
 - **Orchestration confirmed as-is (2026-11-12):** Prefect manages its own ingestion schedule; GitHub Actions runs deploys; dbt platform runs the prod daily schedule. User is mildly concerned about keeping CI dbt runs and dbt platform runs in sync.
@@ -105,6 +105,20 @@ Verify at step 1 (account setup), before building: free dbt platform plan's depl
 
 - **Emporia (2026-11-14):** the account was created with Google/Apple sign-in, which PyEmVue can't use. Going through Emporia's create-account flow with the same email added an email + password login to the **same** account (devices visible). PyEmVue 0.18.9 password login verified: 7 devices: two Vue panels (`Main Panel (200A)` gid 625979 and `Garage` gid 668558, model VUE003) whose circuit channels sit under WAT001 sub-devices (17 and 18 channels), plus three smart plugs (SSO001: catpad, Garage/Wreath, Dehumidifier). Hourly kWh pull for today returned 24 points. Credentials are in `.env` as `EMPORIA_EMAIL` / `EMPORIA_PASSWORD`. Token-based login (id/access/refresh tokens from the web app's IndexedDB) also works as a fallback, but its refresh-token lifetime is unknown. Note: in PyEmVue 0.18.9 an empty username or password causes a misleading `'Auth' object has no attribute 'cognito'` error.
 - **No finding contradicts a settled decision, so no new ADR.** Implementation changes to carry into tickets: Open-Meteo daily pull via Forecast API `past_days` (#7); stagger Prefect schedules (#6/#7); Snowflake in AWS US East (Ohio) (#4); check the GitHub OIDC provider is allowed under the project's SCPs (#4).
+
+## Step 2 findings (ticket #4, 2026-11-15)
+
+- **GitHub OIDC is blocked in this AWS project.** The managed SCP for project accounts, on both the Free and Paid plans, has a `DenyIAMRestrictedActions` statement that denies `iam:*Provider*` unconditionally ([SCPs and RCPs for projects](https://docs.aws.amazon.com/accounts/latest/reference/scps-and-rcps-for-projects.html)). That covers `CreateOpenIDConnectProvider` (and SAML providers). An explicit SCP deny beats any IAM permission, so no role in the project can create one. The only way to lift it is **activating advanced features**: upgrade to Paid first; irreversible; removes spend limits; you take over the AWS Organization ([docs](https://docs.aws.amazon.com/accounts/latest/reference/activate-advanced-features.html)).
+  - **Decision (user, 2026-11-15): defer to #9.** Nothing in #4 needs CI to reach AWS, so the bootstrap creates only the state bucket and the Snowflake CI user; the AWS CI role waits.
+  - **To do (user) before #9:** research best practices for CI-to-AWS auth in this situation, using guides the user has access to. Options seen so far: activate advanced features (OIDC as planned); stored access keys for a dedicated IAM user in GitHub environment secrets (reverses "no stored AWS keys"; roles can't hold long-lived keys); or AWS-native CI (CodeBuild/CodePipeline, allowed on the Free plan, e.g. CodeBuild-hosted GitHub Actions runners) that runs under an IAM role with no OIDC provider. Details on #9. Whatever is chosen needs an ADR, because it changes a settled decision.
+- **Snowflake edition: Standard** (user, 2026-11-15). Official on-demand price in AWS US East (Ohio): **$2.00/credit** Standard (Enterprise $3.00), storage $23/TB-month ([pricing guide](https://www.snowflake.com/pricing/pricing-guide/)). Resource monitor quota set at **6 credits/month** (≈ $12), leaving room under $15 for storage and serverless (Snowpipe), which monitors don't cover.
+- **Resource monitors need ACCOUNTADMIN** (to create them and to attach them to warehouses). Decision (user): the Snowflake CI user is granted `ACCOUNTADMIN` alongside `SYSADMIN`/`SECURITYADMIN`, but its default secondary roles are `NONE` and the prod root uses a separate provider alias per role, so `ACCOUNTADMIN` is only used for the monitor and warehouses.
+- **Provisioned 2026-11-16** with `scripts/setup-snowflake.sh`. Snowflake account created (Standard, AWS US East (Ohio)). Bootstrap applied and its state moved to `s3://serpentair-terraform-state/bootstrap/`. Prod applied as `SVC_TERRAFORM_CI`. `terraform plan` is clean on both roots. Local-dev `dbt build` (dbt Fusion, `DEVELOPER` role, `DEV_WH`) built `connection_check` in the user's personal schema in `SERPENTAIR_DEV`. dbt platform project connected to Snowflake.
+- **dbt platform on the Developer (free) plan** (user downgraded from the Starter trial manually on 2026-11-15, so the trial-end question is moot):
+  - Environment types offered: General, Staging, Production.
+  - dbt versions offered: **v2 Stable** and **v2 Nightly** (not "Latest" as the pricing page suggested). Choose v2 Stable for prod (#8), and pin CI's dbt version to match it (#9).
+  - **Merge jobs exist.** That is an option for running dbt on merge from dbt platform itself rather than CI; weigh it in #9. The deploy trigger stays with GitHub Actions unless decided otherwise, because it also applies Terraform.
+- **Local-dev lives in the prod root:** `SERPENTAIR_DEV` (transient database), `DEV_WH`, and a `DEVELOPER` role that inherits `PROD_RAW_READER` (ADR 0002). Local-dev has no Terraform root of its own.
 
 ## Verification boundaries
 
